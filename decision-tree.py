@@ -1,12 +1,14 @@
-# Following https://www.w3schools.com/python/python_ml_decision_tree.asp 
+# Tutorial followed:
+# https://www.w3schools.com/python/python_ml_decision_tree.asp 
 
 ## Imports
-import pandas
+import pandas as pd
 from sklearn import tree
 from sklearn.tree import DecisionTreeClassifier
+import matplotlib.pyplot as plt
 
 ## Code
-df = pandas.read_csv("test.csv")
+df = pd.read_csv("test.csv")
 
 # All data must be numerical, use map to achieve this
 d = {'UK': 0, 'USA': 1, 'N': 2}
@@ -25,7 +27,8 @@ Y = df['Go'] # Target Prediction
 dtree = DecisionTreeClassifier()
 dtree = dtree.fit(X, Y)
 
-print(dtree.predict([[40, 10, 7, 1]]))
+tree.plot_tree(dtree, feature_names=features)
+plt.show()
 
 #print(X)
 #print('\n')
