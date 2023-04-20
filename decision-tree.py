@@ -3,33 +3,27 @@
 
 ## Imports
 import pandas as pd
-from sklearn import tree
 from sklearn.tree import DecisionTreeClassifier
-import matplotlib.pyplot as plt
+from sklearn.model_selection import cross_val_score, KFold
 
-## Code
-df = pd.read_csv("test.csv")
+# load data from CSV file
+data = pd.read_csv('packets_data.csv')
 
-# All data must be numerical, use map to achieve this
-d = {'UK': 0, 'USA': 1, 'N': 2}
-df['Nationality'] = df['Nationality'].map(d)
+# extract the features and target variable
+X = data.iloc[:, :79] # assuming the first 50 columns are the features
+y = data.iloc[:, -1] # assuming the last column is the target variable
 
-d = {'Y' : 1, 'N' : 0}
-df['Go'] = df['Go'].map(d)
+# define the decision tree classifier
+clf = DecisionTreeClassifier(random_state=0)
 
-# Feature columns are columns we use to predict from
-# Target column is the values we try to predict
-features = ['Age', 'Experience', 'Rank', 'Nationality']
+# define the number of folds for cross-validation
+k = 10
 
-X = df[features] # Feature columns
-Y = df['Go'] # Target Prediction
+# define the k-fold cross-validation object
+kf = KFold(n_splits=k, shuffle=True, random_state=0)
 
-dtree = DecisionTreeClassifier()
-dtree = dtree.fit(X, Y)
+# perform k-fold cross-validation and calculate accuracy score for each fold
+scores = cross_val_score(clf, X, y, cv=kf)
 
-tree.plot_tree(dtree, feature_names=features)
-plt.show()
-
-#print(X)
-#print('\n')
-#print(Y)
+# print the average accuracy score and standard deviation across all folds
+print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
