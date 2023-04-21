@@ -1,45 +1,35 @@
-# Tutorial followed:
-# https://www.youtube.com/watch?v=LYRqcg2s03U
-
+import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.neural_network import MLPClassifier
-from sklearn.model_selection import KFold
-from sklearn.metrics import accuracy_score
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, confusion_matrix
 
-data = pd.read_csv('packets_data.csv')
+# load dataset
+data = pd.read_csv('projectDataset.csv')
+data = data.replace([np.inf, -np.inf, np.nan], 0)
 
-# Load your dataset with 50 features, let's call it X, and your target variable, let's call it y
-X = data.iloc[:, :79] # assuming the first 50 columns are the features
-y = data.iloc[:, -1] # assuming the last column is the target variable
+# select features and target
+X = data.iloc[:, :-1]
+y = data.iloc[:, -1]
 
-# Split your data into training and testing sets with a 70-30 split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+# convert X to int
+X = X.astype(int)
 
-# Set up your neural network classifier
-clf = MLPClassifier(hidden_layer_sizes=(10,10), max_iter=1000)
+# split data into train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Set up the k-fold cross-validation
-kf = KFold(n_splits=10, shuffle=True, random_state=42)
+# instantiate SVM classifier
+svm = SVC()
 
-# Initialize a list to hold the accuracy scores for each fold
-scores = []
+# train the SVM classifier
+svm.fit(X_train, y_train)
 
-# Loop through each fold
-for train_index, test_index in kf.split(X_train):
-    # Split the data into training and testing sets for this fold
-    X_fold_train, X_fold_test = X_train[train_index], X_train[test_index]
-    y_fold_train, y_fold_test = y_train[train_index], y_train[test_index]
+# make predictions on test set
+y_pred = svm.predict(X_test)
 
-    # Fit the neural network classifier to the training data for this fold
-    clf.fit(X_fold_train, y_fold_train)
+# calculate accuracy score and confusion matrix
+acc_score = accuracy_score(y_test, y_pred)
+conf_matrix = confusion_matrix(y_test, y_pred)
 
-    # Make predictions on the testing data for this fold
-    y_pred = clf.predict(X_fold_test)
-
-    # Calculate the accuracy score for this fold and append it to the scores list
-    score = accuracy_score(y_fold_test, y_pred)
-    scores.append(score)
-
-# Print the average accuracy score across all folds
-print("Average accuracy score:", np.mean(scores))
+print("Accuracy Score:\n", acc_score)
+print("Confusion Matrix:\n", conf_matrix)

@@ -1,29 +1,35 @@
-# Tutorial followed:
-# https://www.w3schools.com/python/python_ml_decision_tree.asp 
-
-## Imports
 import pandas as pd
+import numpy as np
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.model_selection import cross_val_score, KFold
+from sklearn.model_selection import KFold
 
-# load data from CSV file
-data = pd.read_csv('packets_data.csv')
+# Load the dataset
+data = pd.read_csv('projectDataset.csv')
+data = data.replace([np.inf, -np.inf, np.nan], 0)
 
-# extract the features and target variable
-X = data.iloc[:, :79] # assuming the first 50 columns are the features
-y = data.iloc[:, -1] # assuming the last column is the target variable
+# Split the dataset into features (X) and target variable (y)
+X = data.iloc[:, :-1]
+y = data.iloc[:, -1]
 
-# define the decision tree classifier
-clf = DecisionTreeClassifier(random_state=0)
+# Convert any float integers to integers
 
-# define the number of folds for cross-validation
-k = 10
+X = X.astype(int)
 
-# define the k-fold cross-validation object
-kf = KFold(n_splits=k, shuffle=True, random_state=0)
+# Initialize the decision tree classifier
+dt = DecisionTreeClassifier()
 
-# perform k-fold cross-validation and calculate accuracy score for each fold
-scores = cross_val_score(clf, X, y, cv=kf)
+# Initialize k-fold validation with 10 folds
+kf = KFold(n_splits=10)
 
-# print the average accuracy score and standard deviation across all folds
-print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+# Loop through each fold and fit the model
+for train_index, test_index in kf.split(X):
+    # Split the data into training and test sets
+    X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+    y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+
+    # Fit the decision tree model on the training data
+    dt.fit(X_train, y_train)
+
+    # Evaluate the model on the test data
+    score = dt.score(X_test, y_test)
+    print(f"Accuracy: {score}")
