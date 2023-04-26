@@ -1,39 +1,58 @@
 import pandas as pd
 import numpy as np
+from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import KFold
-from keras.models import Sequential
-from keras.layers import Dense
+from sklearn.metrics import accuracy_score
+
 
 # Load the dataset
 data = pd.read_csv('projectDataset.csv')
 data = data.replace([np.inf, -np.inf, np.nan], 0)
 
+# Split the dataset into features (X) and target variable (y)
+X = data.iloc[:, :-1]
+y = data.iloc[:, -1]
 
-# Separate the features and target variable
-X = data.iloc[:, :-1].values
-y = data.iloc[:, -1].values
+# Convert any float integers to integers
+X = X.astype(int)
 
-# Convert to float data type
-X = X.astype('float32')
-y = y.astype('float32')
+# Initialize the neural network classifier
+nn = MLPClassifier(hidden_layer_sizes=(10,), activation='relu', solver='adam', max_iter=1000)
 
-# Define the K-fold cross-validation object
-kfold = KFold(n_splits=10, shuffle=True, random_state=42)
+nn.fit(X, y)
 
-# Define the neural network model
-model = Sequential()
-model.add(Dense(32, input_dim=X.shape[1], activation='relu'))
-model.add(Dense(16, activation='relu'))
-model.add(Dense(1, activation='sigmoid'))
-model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+# Get the feature importances from the trained neural network
+input_layer_weights = nn.coefs_[0]
+feature_importances = np.mean(np.abs(input_layer_weights), axis=1)
 
-# Train and evaluate the model using K-fold cross-validation
+# Sort the feature importances by descending order
+feature_importances = list(zip(X.columns, feature_importances))
+feature_importances.sort(key=lambda x: x[1], reverse=True)
+
+# Print the priority order of the fields used in generating the neural network
+print("Priority order of fields used in generating the neural network:")
+for feature, importance in feature_importances[:5]:
+    print(f"{feature}: {importance:.3f}")
+
+# Initialize k-fold validation with 10 folds
+kf = KFold(n_splits=10)
+
 scores = []
-for train_idx, test_idx in kfold.split(X):
-    X_train, y_train = X[train_idx], y[train_idx]
-    X_test, y_test = X[test_idx], y[test_idx]
-    model.fit(X_train, y_train, epochs=50, batch_size=32, verbose=0)
-    _, acc = model.evaluate(X_test, y_test, verbose=0)
-    scores.append(acc)
+# Loop through each fold and fit the model
+for train_index, test_index in kf.split(X):
+    # Split the data into training and test sets
+    X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+    y_train, y_test = y.iloc[train_index], y.iloc[test_index]
 
-print('Accuracy: %.3f%% (%.3f)' % (np.mean(scores)*100, np.std(scores)))
+    # Fit the neural network model on the training data
+    nn.fit(X_train, y_train)
+
+    y_pred = nn.predict(X_test)
+
+    # Evaluate the model on the test data
+    score = accuracy_score(y_test, y_pred)
+    scores.append(score)
+    print(f"Accuracy: {score}")
+
+mean_accuracy = sum(scores) / len(scores)
+print(f"Mean accuracy: {mean_accuracy}")

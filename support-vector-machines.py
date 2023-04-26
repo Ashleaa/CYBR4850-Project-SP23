@@ -1,35 +1,51 @@
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.model_selection import KFold
+from sklearn.metrics import accuracy_score
 
-# load dataset
+
+# Load the dataset
 data = pd.read_csv('projectDataset.csv')
 data = data.replace([np.inf, -np.inf, np.nan], 0)
 
-# select features and target
+# Split the dataset into features (X) and target variable (y)
 X = data.iloc[:, :-1]
 y = data.iloc[:, -1]
 
-# convert X to int
+# Convert any float integers to integers
 X = X.astype(int)
 
-# split data into train and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Initialize the SVM classifier
+data = SVC(kernel='linear', C=1.0)
 
-# instantiate SVM classifier
-svm = SVC()
+# Initialize k-fold validation with 10 folds
+kf = KFold(n_splits=10)
 
-# train the SVM classifier
-svm.fit(X_train, y_train)
+# Loop through each fold and fit the model
+for train_index, test_index in kf.split(X):
+    # Split the data into training and test sets
+    X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+    y_train, y_test = y.iloc[train_index], y.iloc[test_index]
 
-# make predictions on test set
-y_pred = svm.predict(X_test)
+    # Fit the SVM model on the training data
+    data.fit(X_train, y_train)
 
-# calculate accuracy score and confusion matrix
-acc_score = accuracy_score(y_test, y_pred)
-conf_matrix = confusion_matrix(y_test, y_pred)
+    # Compute feature importance
+    feature_importances = np.abs(data.coef_).flatten()
+    # Sort feature importance in descending order
+    sorted_indices = np.argsort(feature_importances)[::-1]
 
-print("Accuracy Score:\n", acc_score)
-print("Confusion Matrix:\n", conf_matrix)
+    # Print feature importance
+    print("Feature importance:")
+    for i in sorted_indices:
+        print(f"{X.columns[i]}: {feature_importances[i]:.3f}")
+
+    y_pred = data.predict(X_test)
+
+    # Evaluate the model on the test data
+    score = accuracy_score(y_test, y_pred)
+    print(f"Accuracy: {score}")
+
+mean_accuracy = sum(scores) / len(scores)
+print(f"Mean accuracy: {mean_accuracy}")
