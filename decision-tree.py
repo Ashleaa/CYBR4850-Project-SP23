@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import cross_val_score
-from sklearn.svm import LinearSVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import KFold
+from sklearn.metrics import accuracy_score
 
 # Load the dataset
 data = pd.read_csv('projectDataset.csv')
@@ -12,32 +13,38 @@ X = data.iloc[:, :-1]
 y = data.iloc[:, -1]
 
 # Convert any float integers to integers
+
 X = X.astype(int)
 
-# Initialize the linear SVM classifier with default parameters
-clf = LinearSVC()
+# Initialize the decision tree classifier
+dt = DecisionTreeClassifier()
+dt = dt.fit(X, y)
 
-# Fit the linear SVM classifier to the data
-clf.fit(X, y)
+feature_importances = list(zip(X.columns, dt.feature_importances_))
+feature_importances.sort(key=lambda x: x[1], reverse=True)
 
-# Compute the absolute coefficients of the linear SVM
-abs_coefs = np.abs(clf.coef_[0])
 
-# Compute the sum of the absolute coefficients
-total_coef = np.sum(abs_coefs)
+print("Priority order of fields used: :")
+for feature, importance in feature_importances[:5]:
+    print(f"{feature}: {100 * importance:.1f}%")
 
-# Get the top 5 features based on their coefficients
-top_5 = np.argsort(abs_coefs)[-5:]
 
-# Print the top 5 features and their coefficients as percentages
-print("Top 5 features and their coefficients:")
-for i in top_5:
-    coef_percent = abs_coefs[i] / total_coef * 100
-    print(f"{data.columns[i]}: {coef_percent:.2f}%")
+# Initialize k-fold validation with 10 folds
+kf = KFold(n_splits=10)
 
-# Compute cross-validation scores
-scores = cross_val_score(clf, X, y, cv=10)
+# Loop through each fold and fit the model
+scores = []
+for train_index, test_index in kf.split(X):
+    # Split the data into training and test sets
+    X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+    y_train, y_test = y.iloc[train_index], y.iloc[test_index]
 
-# Print the accuracy scores and mean accuracy
-print("Accuracy scores:", scores)
-print("Mean accuracy:", scores.mean())
+    # Fit the decision tree model on the training data
+    dt.fit(X_train, y_train)
+
+    # Evaluate the model on the test data
+    y_pred = dt.predict(X_test)
+    scores.append(accuracy_score(y_test, y_pred))
+
+mean_accuracy = sum(scores) / len(scores)
+print(f"Mean accuracy: {100 * mean_accuracy: .1f}%")

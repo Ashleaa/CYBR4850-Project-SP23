@@ -32,7 +32,7 @@ feature_importances.sort(key=lambda x: x[1], reverse=True)
 # Print the priority order of the fields used in generating the neural network
 print("Priority order of fields used in generating the neural network:")
 for feature, importance in feature_importances[:5]:
-    print(f"{feature}: {importance:.3f}")
+    print(f"{feature}: {100 * importance:.1f}%")
 
 # Initialize k-fold validation with 10 folds
 kf = KFold(n_splits=10)
@@ -52,7 +52,7 @@ for train_index, test_index in kf.split(X):
     # Evaluate the model on the test data
     score = accuracy_score(y_test, y_pred)
     scores.append(score)
-    print(f"Accuracy: {score}")
+    #print(f"Accuracy: {score}")
 
 mean_accuracy = sum(scores) / len(scores)
-print(f"Mean accuracy: {mean_accuracy}")
+print(f"Mean accuracy: {100 * mean_accuracy: .1f}%")

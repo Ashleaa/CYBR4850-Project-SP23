@@ -1,9 +1,7 @@
 import pandas as pd
 import numpy as np
-from sklearn.svm import SVC
-from sklearn.model_selection import KFold
-from sklearn.metrics import accuracy_score
-
+from sklearn.model_selection import cross_val_score
+from sklearn.svm import LinearSVC
 
 # Load the dataset
 data = pd.read_csv('projectDataset.csv')
@@ -16,36 +14,31 @@ y = data.iloc[:, -1]
 # Convert any float integers to integers
 X = X.astype(int)
 
-# Initialize the SVM classifier
-data = SVC(kernel='linear', C=1.0)
+# Initialize the linear SVM classifier with default parameters
+clf = LinearSVC()
 
-# Initialize k-fold validation with 10 folds
-kf = KFold(n_splits=10)
+# Fit the linear SVM classifier to the data
+clf.fit(X, y)
 
-# Loop through each fold and fit the model
-for train_index, test_index in kf.split(X):
-    # Split the data into training and test sets
-    X_train, X_test = X.iloc[train_index], X.iloc[test_index]
-    y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+# Compute the absolute coefficients of the linear SVM
+abs_coefs = np.abs(clf.coef_[0])
 
-    # Fit the SVM model on the training data
-    data.fit(X_train, y_train)
+# Compute the sum of the absolute coefficients
+total_coef = np.sum(abs_coefs)
 
-    # Compute feature importance
-    feature_importances = np.abs(data.coef_).flatten()
-    # Sort feature importance in descending order
-    sorted_indices = np.argsort(feature_importances)[::-1]
+# Get the top 5 features based on their coefficients
+top_5 = np.argsort(abs_coefs)[-5:]
 
-    # Print feature importance
-    print("Feature importance:")
-    for i in sorted_indices:
-        print(f"{X.columns[i]}: {feature_importances[i]:.3f}")
+# Print the top 5 features and their coefficients as percentages
+print("Top 5 features and their coefficients:")
+for i in top_5:
+    coef_percent = abs_coefs[i] / total_coef * 100
+    print(f"{data.columns[i]}: {coef_percent:.1f}%")
 
-    y_pred = data.predict(X_test)
+# Compute cross-validation scores
+scores = cross_val_score(clf, X, y, cv=10)
 
-    # Evaluate the model on the test data
-    score = accuracy_score(y_test, y_pred)
-    print(f"Accuracy: {score}")
-
+# Print the accuracy scores and mean accuracy
+#print("Accuracy scores:", scores)
 mean_accuracy = sum(scores) / len(scores)
-print(f"Mean accuracy: {mean_accuracy}")
+print(f"Mean accuracy: {100 * mean_accuracy: .1f}%")
